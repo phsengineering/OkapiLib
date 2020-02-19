@@ -65,6 +65,35 @@ void DefaultOdomChassisController::driveToPoint(const Point &ipoint,
     controller->moveDistance(length - ioffset);
   }
 }
+void DefaultOdomChassisController::driveToPointAsync(const Point &ipoint,
+                                                    const bool ibackwards,
+                                                    const QLength &ioffset) {
+  waitForOdomTask();
+
+  auto [length, angle] = OdomMath::computeDistanceAndAngleToPoint(
+    ipoint.inFT(defaultStateMode), odom->getState(StateMode::FRAME_TRANSFORMATION));
+
+  if (ibackwards) {
+    length *= -1;
+    angle += 180_deg;
+  }
+
+  LOG_INFO("DefaultOdomChassisController: Computed length of " +
+           std::to_string(length.convert(meter)) + " meters and angle of " +
+           std::to_string(angle.convert(degree)) + " degrees");
+
+  if (angle.abs() > turnThreshold) {
+    LOG_INFO("DefaultOdomChassisController: Turning " + std::to_string(angle.convert(degree)) +
+             " degrees");
+    controller->turnAngle(angle);
+  }
+
+  if ((length - ioffset).abs() > moveThreshold) {
+    LOG_INFO("DefaultOdomChassisController: Async Driving " +
+             std::to_string((length - ioffset).convert(meter)) + " meters");
+    controller->moveDistanceAsync(length - ioffset);
+  }
+}
 
 void DefaultOdomChassisController::turnToPoint(const Point &ipoint) {
   waitForOdomTask();
@@ -81,7 +110,21 @@ void DefaultOdomChassisController::turnToPoint(const Point &ipoint) {
     controller->turnAngle(angle);
   }
 }
+void DefaultOdomChassisController::turnToPointAsync(const Point &ipoint) {
+  waitForOdomTask();
 
+  const auto angle = OdomMath::computeAngleToPoint(ipoint.inFT(defaultStateMode),
+                                                   odom->getState(StateMode::FRAME_TRANSFORMATION));
+
+  LOG_INFO("DefaultOdomChassisController: Computed angle of " +
+           std::to_string(angle.convert(degree)) + " degrees");
+
+  if (angle.abs() > turnThreshold) {
+    LOG_INFO("DefaultOdomChassisController: Async Turning " + std::to_string(angle.convert(degree)) +
+             " degrees");
+    controller->turnAngleAsync(angle);
+  }
+}
 void DefaultOdomChassisController::turnToAngle(const QAngle &iangle) {
   waitForOdomTask();
 
@@ -96,7 +139,20 @@ void DefaultOdomChassisController::turnToAngle(const QAngle &iangle) {
     controller->turnAngle(angle);
   }
 }
+void DefaultOdomChassisController::turnToAngleAsync(const QAngle &iangle) {
+  waitForOdomTask();
 
+  const auto angle = iangle - odom->getState(StateMode::FRAME_TRANSFORMATION).theta;
+
+  LOG_INFO("DefaultOdomChassisController: Computed angle of " +
+           std::to_string(angle.convert(degree)) + " degrees");
+
+  if (angle.abs() > turnThreshold) {
+    LOG_INFO("DefaultOdomChassisController: Async Turning " + std::to_string(angle.convert(degree)) +
+             " degrees");
+    controller->turnAngleAsync(angle);
+  }
+}
 void DefaultOdomChassisController::moveDistance(QLength itarget) {
   controller->moveDistance(itarget);
 }
