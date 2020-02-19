@@ -21,7 +21,7 @@ USE_PACKAGE:=1
 
 # Set this to 1 to add additional rules to compile your project as a PROS library template
 IS_LIBRARY:=1
-LIBNAME:=okapilib
+LIBNAME:=modkapilib
 VERSION:=4.0.3
 EXCLUDE_SRC_FROM_LIB=$(call rwildcard,$(SRCDIR)/test,*.*)
 # this line excludes opcontrol.c and similar files
